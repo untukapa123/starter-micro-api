@@ -3,7 +3,16 @@ const https = require('https');
 const { URL } = require('url');
 
 http.createServer((req, res) => {
-    const targetUrl = req.url.replace('/','https://');
+    const requestUrl = req.url;
+    const urlParts = requestUrl.split('/');
+
+    if (urlParts.length < 3) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Invalid URL format');
+        return;
+    }
+
+    const targetUrl = urlParts.slice(2).join('/'); // Mengambil URL target
     console.log(`Proxying request to: ${targetUrl}`);
 
     const options = new URL(targetUrl);
