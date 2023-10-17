@@ -1,38 +1,23 @@
 const http = require('http');
-const https = require('https');
-const { URL } = require('url');
+const httpProxy = require('http-proxy');
+
+// Konfigurasi target URL
+const target = 'https://d3j4fjrwclc3o8.cloudfront.net/CH1/indexCH1.m3u8';
+
+const proxy = httpProxy.createProxyServer({});
 
 http.createServer((req, res) => {
-    const requestUrl = req.url;
-    const urlParts = requestUrl.split('/');
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (urlParts.length < 3) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Invalid URL format');
-        return;
+    if (req.method === 'OPTIONS') {
+        // Handle preflight requests
+        res.writeHead(200);
+        res.end();
+    } else {
+        // Proxy the request to the target URL
+        proxy.web(req, res, { target });
     }
-
-    const targetUrl = urlParts.slice(2).join('/'); // Mengambil URL target
-    console.log(`Proxying request to: ${targetUrl}`);
-
-    const options = new URL(targetUrl);
-    const requestOptions = {
-        hostname: options.hostname,
-        path: options.pathname + options.search,
-        method: req.method,
-        headers: req.headers
-    };
-
-    const proxyReq = https.request(requestOptions, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        proxyRes.pipe(res, { end: true });
-    });
-
-    req.pipe(proxyReq, { end: true });
-
-    proxyReq.on('error', (error) => {
-        console.error('Error:', error);
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Internal Server Error');
-    });
 }).listen(process.env.PORT || 3000);
